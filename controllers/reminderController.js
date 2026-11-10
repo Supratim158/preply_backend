@@ -238,6 +238,43 @@ const getTodayReminders = async (req, res) => {
   }
 };
 
+// GET /api/reminders/upcoming
+// Fetch reminders scheduled strictly after today's date (future dates)
+const getUpcomingReminders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const today = getTodayDate();
+
+    await updateMissedReminders(userId);
+
+    const query = {
+      userId,
+      date: { $gt: today },
+      status: { $ne: 'missed' },
+    };
+
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+
+    const reminders = await Reminder.find(query)
+      .sort({ date: 1, time: 1 });
+
+    return res.status(200).json({
+      success: true,
+      today,
+      count: reminders.length,
+      reminders,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch upcoming reminders',
+      error: error.message,
+    });
+  }
+};
+
 // PATCH /api/reminders/:id/done
 const markReminderDone = async (req, res) => {
   try {
@@ -393,6 +430,7 @@ module.exports = {
   createReminder,
   getAllReminders,
   getTodayReminders,
+  getUpcomingReminders,
   markReminderDone,
   deleteReminder,
   getReminderHistory,
