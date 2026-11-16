@@ -7,6 +7,7 @@ const {
   getAllReminders,
   getTodayReminders,
   getUpcomingReminders,
+  getRemindersByDate,
   markReminderDone,
   deleteReminder,
   getReminderHistory,
@@ -24,6 +25,12 @@ router.get('/today', verifyTokenAndAuthorization, getTodayReminders);
 
 // Get upcoming reminders (scheduled after today's date)
 router.get('/upcoming', verifyTokenAndAuthorization, getUpcomingReminders);
+
+// Get reminders for a selected date
+router.get('/date/:date', verifyTokenAndAuthorization, getRemindersByDate);
+router.get('/date', verifyTokenAndAuthorization, getRemindersByDate);
+router.get('/selected-date/:date', verifyTokenAndAuthorization, getRemindersByDate);
+router.get('/selected-date', verifyTokenAndAuthorization, getRemindersByDate);
 
 // Get completed and missed reminders
 router.get('/history', verifyTokenAndAuthorization, getReminderHistory);

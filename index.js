@@ -13,6 +13,7 @@ const {
 } = require('./controllers/notificationScheduler');
 const AtsRoutes = require('./routes/atsRoutes');
 const InterviewRoutes = require('./routes/interviewRoutes');
+const ChatBotRoutes = require('./routes/chatBotRoutes');
 
 mongoose.connect(process.env.MONGO_URL)
   .then(() => {
@@ -30,6 +31,7 @@ app.use("/api/reminders", ReminderRoute);
 app.use("/api/notification", NotificationRoute);
 app.use("/api/ats", AtsRoutes);
 app.use("/api/interview", InterviewRoutes);
+app.use("/api/chats", ChatBotRoutes);
 
 app.listen(process.env.PORT || 1520, () =>
   console.log(`Preply backend is running on ${process.env.PORT}`)

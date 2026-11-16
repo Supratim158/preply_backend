@@ -1,3 +1,12 @@
+// Polyfill canvas-dependent globals to suppress PDF.js node warnings
+// since we only extract text/annotations and do not render to canvas
+if (!globalThis.DOMMatrix) {
+  globalThis.DOMMatrix = class DOMMatrix {};
+}
+if (!globalThis.Path2D) {
+  globalThis.Path2D = class Path2D {};
+}
+
 const pdfjsLib = require("pdfjs-dist/legacy/build/pdf.js");
 
 const extractResumeText = async (buffer) => {

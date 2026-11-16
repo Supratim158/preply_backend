@@ -188,6 +188,10 @@ return res.status(201).json({
 // GET /api/reminders
 const getAllReminders = async (req, res) => {
   try {
+    if (req.query.date) {
+      return getRemindersByDate(req, res);
+    }
+
     const userId = req.user.id;
 
     await updateMissedReminders(userId);
@@ -270,6 +274,69 @@ const getUpcomingReminders = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch upcoming reminders',
+      error: error.message,
+    });
+  }
+};
+
+// GET /api/reminders/date/:date or GET /api/reminders/date?date=YYYY-MM-DD
+// Fetch reminders for a selected date; returns 'No reminder' if none found
+const getRemindersByDate = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const rawDate = req.params.date || req.query.date || (req.body && req.body.date);
+    const date = typeof rawDate === 'string' ? rawDate.trim() : '';
+
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date is required (YYYY-MM-DD)',
+      });
+    }
+
+    if (!isValidDate(date)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date. Use YYYY-MM-DD.',
+      });
+    }
+
+    await updateMissedReminders(userId);
+
+    const query = {
+      userId,
+      date,
+    };
+
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+
+    const reminders = await Reminder.find(query).sort({ time: 1 });
+
+    if (reminders.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No reminder',
+        date,
+        count: 0,
+        reminders: [],
+        reminder: null,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Reminders fetched successfully',
+      date,
+      count: reminders.length,
+      reminders,
+      reminder: reminders[0],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch reminders for selected date',
       error: error.message,
     });
   }
@@ -431,6 +498,9 @@ module.exports = {
   getAllReminders,
   getTodayReminders,
   getUpcomingReminders,
+  getRemindersByDate,
+  getReminderBySelectedDate: getRemindersByDate,
+  getRemindersBySelectedDate: getRemindersByDate,
   markReminderDone,
   deleteReminder,
   getReminderHistory,
