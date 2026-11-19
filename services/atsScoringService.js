@@ -237,7 +237,8 @@ Suggestions should be specific and actionable.
   const { data: ai, usage } = await generateStructuredJson({
     instructions,
     input,
-    maxOutputTokens: 3000,
+    reasoningEffort: null,
+    maxOutputTokens: 2000,
   });
 
   const scoring = calculateATSScore(ai, parsed.pageCount, links);

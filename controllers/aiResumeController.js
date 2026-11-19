@@ -468,11 +468,18 @@ exports.generateOptimizedResume = async (req, res) => {
           sessionId: result.sessionId,
           status: result.status,
           jobRole: result.jobRole,
+          originalScore: result.originalScore,
+          optimizedScore: result.optimizedScore,
+          originalATSScore: result.originalScore,
+          optimizedATSScore: result.optimizedScore,
           atsComparison: result.atsComparison,
           optimization: result.optimization,
           resume: result.resume,
           pdf: result.pdf,
+          pdfInfo: result.pdf,
         },
+        pdf: result.pdf,
+        pdfInfo: result.pdf,
       });
     } else {
       return res.status(200).json({
@@ -710,6 +717,72 @@ exports.deleteSession = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to delete optimization session",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// ============================================
+// 9. GET USER OPTIMIZATION SESSIONS HISTORY
+// ============================================
+exports.getOptimizationHistory = async (req, res) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid user authentication",
+      });
+    }
+
+    const sessions = await AIResumeSession.find({
+      userId,
+    })
+      .sort({ updatedAt: -1, createdAt: -1 })
+      .lean();
+
+    const historyData = sessions.map((session) => {
+      const originalScore = session.originalResume?.atsScore || 0;
+      const acceptedVersion =
+        (session.generatedVersions || []).find((v) => v.accepted) ||
+        (session.generatedVersions || [])[session.generatedVersions?.length - 1] ||
+        null;
+      const isImproved = Boolean(
+        acceptedVersion && acceptedVersion.atsScore > originalScore
+      );
+
+      return {
+        sessionId: session._id,
+        atsResumeId: session.originalResume?.atsResumeId
+          ? session.originalResume.atsResumeId.toString()
+          : null,
+        status: session.status,
+        jobRole: session.jobDetails?.jobRole || "Target Role",
+        originalScore,
+        optimizedScore: acceptedVersion
+          ? acceptedVersion.atsScore
+          : originalScore,
+        improvement: isImproved ? acceptedVersion.atsScore - originalScore : 0,
+        isImproved,
+        completed: session.interview?.completed || false,
+        hasGeneratedResume: Boolean(acceptedVersion),
+        pdfUrl: acceptedVersion?.pdfUrl || null,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Optimization history fetched successfully",
+      count: historyData.length,
+      data: historyData,
+    });
+  } catch (error) {
+    console.error("Get Optimization History Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch optimization history",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }

@@ -10,42 +10,72 @@ const { validateAndSanitizeResume } = require("./resumeValidator");
 const { generateOnePageResumePdf } = require("./resumePdfGenerator");
 
 /**
- * Upload PDF buffer to Cloudinary matching existing ATS upload pattern
+ * Upload PDF buffer to Cloudinary with strict non-blocking timeout
  */
 const uploadPdfToCloudinary = (buffer, filename) => {
-  return new Promise((resolve, reject) => {
-    // If Cloudinary keys are dummy or missing, resolve gracefully
+  return new Promise((resolve) => {
+    let settled = false;
+    const safeResolve = (val) => {
+      if (!settled) {
+        settled = true;
+        resolve(val);
+      }
+    };
+
+    // 2.5-second timeout safeguard so Cloudinary NEVER stalls the response
+    const timer = setTimeout(() => {
+      console.log("[Cloudinary] Upload bypassed (timeout safeguard), serving PDF locally.");
+      safeResolve({
+        secure_url: null,
+        public_id: `local-${Date.now()}`,
+      });
+    }, 2500);
+
     if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
-      return resolve({
+      clearTimeout(timer);
+      return safeResolve({
         secure_url: null,
         public_id: `local-${Date.now()}`,
       });
     }
 
-    const publicId = `${Date.now()}-${filename
-      .replace(/\.pdf$/i, "")
-      .replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+    try {
+      const publicId = `${Date.now()}-${filename
+        .replace(/\.pdf$/i, "")
+        .replace(/[^a-zA-Z0-9_-]/g, "_")}`;
 
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: "preply/optimized_resumes",
-        resource_type: "raw",
-        public_id: publicId,
-        format: "pdf",
-      },
-      (error, result) => {
-        if (error) {
-          console.warn("Cloudinary upload failed, continuing with buffer storage:", error.message);
-          return resolve({
-            secure_url: null,
-            public_id: publicId,
-          });
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "preply/optimized_resumes",
+          resource_type: "raw",
+          public_id: publicId,
+          format: "pdf",
+          timeout: 2000,
+        },
+        (error, result) => {
+          clearTimeout(timer);
+          if (error) {
+            console.warn("[Cloudinary] Upload failed, falling back to local:", error.message);
+            return safeResolve({
+              secure_url: null,
+              public_id: publicId,
+            });
+          }
+          safeResolve(result || { secure_url: null, public_id: publicId });
         }
-        resolve(result);
-      }
-    );
+      );
 
-    stream.end(buffer);
+      stream.on("error", (err) => {
+        clearTimeout(timer);
+        console.warn("[Cloudinary] Stream error:", err.message);
+        safeResolve({ secure_url: null, public_id: publicId });
+      });
+
+      stream.end(buffer);
+    } catch (err) {
+      clearTimeout(timer);
+      safeResolve({ secure_url: null, public_id: `local-${Date.now()}` });
+    }
   });
 };
 
@@ -74,8 +104,8 @@ const regenerateResumeWithAtsFeedback = async ({
   const { data: rawResume, usage } = await generateStructuredJson({
     instructions,
     input,
-    reasoningEffort: "medium",
-    maxOutputTokens: 3500,
+    reasoningEffort: null,
+    maxOutputTokens: 2500,
   });
 
   const sanitized = validateAndSanitizeResume(rawResume, fallbackContact);
@@ -207,12 +237,12 @@ const runResumeOptimizationLoop = async (session, userProfile = {}) => {
     };
 
     let attemptNumber = 2;
-    const maxAttempts = 3;
+    const maxAttempts = 2;
 
     while (attemptNumber <= maxAttempts) {
-      // If we already achieved an excellent score (e.g. >= 88) that is higher than original, stop and avoid unnecessary modifications
-      if (bestScore > originalATSScore && bestScore >= 88) {
-        console.log(`[Optimization] Score ${bestScore} is already excellent. Halting further attempts.`);
+      // If we already achieved a top-tier score (e.g. >= 92) higher than original, avoid unnecessary modifications
+      if (bestScore > originalATSScore && bestScore >= 92) {
+        console.log(`[Optimization] Score ${bestScore} is already top-tier. Halting further attempts.`);
         break;
       }
 
@@ -300,17 +330,19 @@ const runResumeOptimizationLoop = async (session, userProfile = {}) => {
       const filename = `${sanitizedName}_${sanitizedRole}_Resume.pdf`;
 
       const cloudUpload = await uploadPdfToCloudinary(bestPdfBuffer, filename);
-      finalPdfUrl = cloudUpload.secure_url;
-      finalPublicId = cloudUpload.public_id;
+      finalPdfUrl = cloudUpload?.secure_url || null;
+      finalPublicId = cloudUpload?.public_id || `local-${Date.now()}`;
 
       generatedVersions[bestVersionIndex].pdfUrl = finalPdfUrl;
       generatedVersions[bestVersionIndex].publicId = finalPublicId;
 
       session.bestVersion = generatedVersions[bestVersionIndex].attemptNumber;
       session.status = "completed";
+      console.log(`[Optimization Loop] Accepted Best Version: Attempt ${session.bestVersion} with Score ${bestScore}`);
     } else {
       session.bestVersion = null;
       session.status = "no_improvement";
+      console.log(`[Optimization Loop] No improved version found. Original score: ${originalATSScore}, Best achieved: ${bestScore}`);
     }
 
     // Clean up in-memory buffer from database persistence
@@ -329,11 +361,35 @@ const runResumeOptimizationLoop = async (session, userProfile = {}) => {
 
     session.isGenerating = false;
     await session.save();
+    console.log(`[Optimization Loop] Session saved. Sending completed response to client.`);
+
+    const pdfInfo = isImproved
+      ? {
+          downloadUrl: `/api/ai-resume/download/${session._id}`,
+          fileName: `${(bestResumeData?.personalDetails?.fullName || "Candidate").replace(/\s+/g, "_")}_${targetRole.replace(/\s+/g, "_")}_Resume.pdf`,
+          pageCount: bestPageCount,
+          pageSize: "A4",
+          isValid: bestPageCount === 1,
+          cloudUrl: finalPdfUrl,
+        }
+      : null;
+
+    const finalResume = isImproved
+      ? {
+          ...bestResumeData,
+          pdf: pdfInfo,
+          pdfInfo: pdfInfo,
+        }
+      : null;
 
     return {
       sessionId: session._id,
       status: session.status,
       jobRole: targetRole,
+      originalScore: originalATSScore,
+      optimizedScore: isImproved ? bestScore : originalATSScore,
+      originalATSScore: originalATSScore,
+      optimizedATSScore: isImproved ? bestScore : originalATSScore,
       atsComparison: {
         originalScore: originalATSScore,
         optimizedScore: isImproved ? bestScore : originalATSScore,
@@ -344,17 +400,9 @@ const runResumeOptimizationLoop = async (session, userProfile = {}) => {
         improved: isImproved,
         bestVersion: session.bestVersion,
       },
-      resume: isImproved ? bestResumeData : null,
-      pdf: isImproved
-        ? {
-            downloadUrl: `/api/ai-resume/download/${session._id}`,
-            fileName: `${(bestResumeData?.personalDetails?.fullName || "Candidate").replace(/\s+/g, "_")}_${targetRole.replace(/\s+/g, "_")}_Resume.pdf`,
-            pageCount: bestPageCount,
-            pageSize: "A4",
-            isValid: bestPageCount === 1,
-            cloudUrl: finalPdfUrl,
-          }
-        : null,
+      resume: finalResume,
+      pdf: pdfInfo,
+      pdfInfo: pdfInfo,
       bestPdfBuffer: isImproved ? bestPdfBuffer : null,
     };
   } catch (err) {

@@ -31,8 +31,8 @@ const generateOptimizedResume = async ({
   const { data: rawResume, usage } = await generateStructuredJson({
     instructions,
     input,
-    reasoningEffort: "medium", // Suitable reasoning effort for generation
-    maxOutputTokens: 3500,
+    reasoningEffort: null,
+    maxOutputTokens: 2500,
   });
 
   // Validate and sanitize the structured resume

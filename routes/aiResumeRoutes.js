@@ -13,6 +13,7 @@ const {
   getSessionDetails,
   downloadOptimizedPdf,
   deleteSession,
+  getOptimizationHistory,
 } = require("../controllers/aiResumeController");
 
 // Conditional upload middleware to handle both multipart and JSON bodies seamlessly
@@ -86,6 +87,13 @@ router.delete(
   "/session/:sessionId",
   verifyTokenAndAuthorization,
   deleteSession
+);
+
+// 9. Get optimization history
+router.get(
+  "/history",
+  verifyTokenAndAuthorization,
+  getOptimizationHistory
 );
 
 module.exports = router;

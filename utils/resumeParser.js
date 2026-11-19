@@ -8,11 +8,16 @@ if (!globalThis.Path2D) {
     globalThis.Path2D = class Path2D {};
 }
 
+const path = require("path");
 const pdfjsLib = require("pdfjs-dist/legacy/build/pdf.js");
+
+const standardFontDir =
+    path.join(__dirname, "../node_modules/pdfjs-dist/standard_fonts/") + path.sep;
 
 async function parseResume(buffer) {
     const pdf = await pdfjsLib.getDocument({
         data: new Uint8Array(buffer),
+        standardFontDataUrl: standardFontDir,
         disableFontFace: true,
         isEvalSupported: false,
         useSystemFonts: false,
