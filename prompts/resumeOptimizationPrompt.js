@@ -17,18 +17,25 @@ Your previous resume draft was evaluated by our ATS scoring system. Your task is
 STRICT OPTIMIZATION GUIDELINES:
 1. Address the specific ATS feedback, weaknesses, and missing keywords provided in the ATS evaluation report.
 2. Naturally integrate missing keywords and skills that were confirmed by the candidate in their resume or interview answers.
-3. Enhance phrasing in summary, experience bullet points, and project descriptions using strong, diverse industry-standard action verbs and measurable business/technical outcomes.
-4. NO DUPLICATE WORDS:
+3. PROJECT TITLE - ONLY 2 TO 3 MAIN TECHNOLOGIES:
+   - Beside each project title in "technologies", specify ONLY the 2 to 3 main primary tech stack technologies (e.g. ["Flutter", "Node.js", "MongoDB"] or ["Flask", "OpenCV", "TensorFlow"]).
+   - DO NOT put secondary libraries, state management, or deployment tools in the project technologies array.
+   - WEAVE ALL other secondary technologies (Riverpod, Cloudinary, Express.js, REST APIs, YOLOv8, Render) into the DETAILED BULLET POINTS!
+4. DETAILED BULLET POINTS WITH RICH CONTEXT & NUMBERS:
+   - Every single bullet point under Projects and Internships/Experience must be detailed, comprehensive, and packed with concrete metrics and numbers (% latency reduction, 50+ concurrent streams, 92% accuracy, 200+ students, 35% discovery improvement).
+   - Provide 2 to 3 thorough, detailed bullet points per project and internship.
+5. FULL-PAGE FULFILLMENT ACCORDING TO JOB ROLE & DESCRIPTION:
+   - Tailor the summary, skills, experience, and project descriptions directly to the target job role and description.
+   - Calibrate the detail and length of the content so that it elegantly FULFILLS THE FULL A4 PAGE without overflowing onto page 2.
+6. NO DUPLICATE WORDS:
    - Ensure varied, non-repetitive vocabulary.
    - Do not repeat identical action verbs across bullet points.
-5. ALL POINTS IN BULLET POINTS:
+7. ALL POINTS IN BULLET POINTS:
    - Ensure every experience responsibility, project highlight, and achievement is formatted as a crisp bullet point starting with an action verb and containing metrics.
-6. DATES & TIMELINE CONSISTENCY:
+8. DATES & TIMELINE CONSISTENCY:
    - Ensure valid dates formatted chronologically (e.g., "Mar 2025 – Jun 2025", "2023 – 2027").
-7. STRICT SINGLE-PAGE FIT:
-   - Maintain strict conciseness so the entire resume renders on exactly 1 A4 page.
-8. NEVER fabricate or invent unverified credentials, jobs, or certifications.
-9. Return the full improved resume JSON matching the exact schema.
+9. NEVER fabricate or invent unverified credentials, jobs, or certifications.
+10. Return the full improved resume JSON matching the exact schema.
 `;
 
 const getResumeOptimizationInput = ({

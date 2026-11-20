@@ -29,21 +29,26 @@ CORE SECTION ARCHITECTURE (IN EXACT ORDER):
 8. achievements: Specific awards, competitive programming stats (e.g., LeetCode/Hackathons), leadership roles.
 
 STRICT CONSTRAINTS & QUALITY RULES:
-1. NO DUPLICATE WORDS OR REDUNDANT PHRASING:
+1. PROJECT TITLE - ONLY 2 TO 3 MAIN TECHNOLOGIES:
+   - Beside the project title in "technologies", specify ONLY the 2 to 3 main primary tech stack technologies (e.g., ["Flutter", "Node.js", "MongoDB"] or ["Flask", "OpenCV", "TensorFlow"]).
+   - DO NOT list secondary libraries, packages, or tools (like Riverpod, Cloudinary, Express.js, REST APIs, YOLOv8, Render) in the project technologies array.
+   - WEAVE ALL other secondary technologies, frameworks, libraries, protocols, and deployment details into the DETAILED BULLET POINTS!
+2. DETAILED BULLET POINTS WITH RICH CONTEXT & NUMBERS:
+   - Every single bullet point under Projects and Internships/Experience must be detailed, comprehensive, and packed with concrete metrics and numbers (% latency reduction, 50+ concurrent streams, 92% accuracy, 200+ students, 35% discovery improvement, 3-tier architecture).
+   - Provide 2 to 3 thorough, detailed bullet points per project and internship.
+3. FULL-PAGE FULFILLMENT ACCORDING TO JOB ROLE & DESCRIPTION:
+   - Tailor the summary, skills, experience, and project descriptions directly to the target job role and job description.
+   - Calibrate the detail and length of the content so that it elegantly FULFILLS THE FULL A4 PAGE from top to bottom without overflowing onto page 2.
+4. NO DUPLICATE WORDS OR REDUNDANT PHRASING:
    - Do not repeat the same action verbs across consecutive bullet points.
    - Use diverse, powerful action verbs: Developed, Implemented, Optimized, Engineered, Architected, Automated, Streamlined, Spearheaded, Built, Designed.
    - Avoid filler words and repetitive buzzwords.
-2. ALL POINTS IN BULLET POINTS:
-   - Every responsibility, project highlight, and achievement MUST be a crisp, standalone bullet point.
-   - Each bullet point must follow the formula: [Strong Action Verb] + [What was built/implemented with technical keywords] + [Measurable Impact, Metric, or Scale (%, numbers, latency, users)].
-3. ATS KEYWORD ALIGNMENT:
-   - Incorporate crucial technical keywords, frameworks, libraries, database concepts, architectures, and methodologies from the target role and job description.
-4. VALID CHRONOLOGICAL DATES:
+5. ALL POINTS IN BULLET POINTS:
+   - Every responsibility, project highlight, and achievement MUST be a crisp, standalone bullet point starting with a strong action verb.
+6. VALID CHRONOLOGICAL DATES:
    - Include clear, professional date formats for all education, experience, and project entries (e.g. "Mar 2025 – Jun 2025", "2023 – 2027", "Feb 2026 – Present").
    - Maintain reverse chronological order.
-5. STRICT SINGLE-PAGE FIT:
-   - Keep bullet points punchy and concise (1 to 2 lines per bullet max) so the resume renders on EXACTLY 1 A4 PAGE without overflowing.
-6. TRUTHFUL & ACCURATE:
+7. TRUTHFUL & ACCURATE:
    - Anchor qualifications in the user's real resume and interview confirmations. Never hallucinate unverified companies or degrees.
 
 Return ONLY valid JSON.

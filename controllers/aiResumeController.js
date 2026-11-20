@@ -616,11 +616,18 @@ exports.downloadOptimizedPdf = async (req, res) => {
       });
     }
 
-    // Verify ownership strictly
-    const session = await AIResumeSession.findOne({
+    // Verify ownership strictly - check by session ID or ATS resume ID
+    let session = await AIResumeSession.findOne({
       _id: sessionId,
       userId,
     });
+
+    if (!session) {
+      session = await AIResumeSession.findOne({
+        "originalResume.atsResumeId": sessionId,
+        userId,
+      }).sort({ createdAt: -1 });
+    }
 
     if (!session) {
       return res.status(404).json({
@@ -629,12 +636,22 @@ exports.downloadOptimizedPdf = async (req, res) => {
       });
     }
 
-    const acceptedVersion = (session.generatedVersions || []).find((v) => v.accepted);
+    // Resolve best or accepted generated version, or latest version
+    const acceptedVersion =
+      (session.generatedVersions || []).find((v) => v.accepted) ||
+      (session.bestVersion
+        ? (session.generatedVersions || []).find(
+            (v) => v.attemptNumber === session.bestVersion
+          )
+        : null) ||
+      (session.generatedVersions && session.generatedVersions.length > 0
+        ? session.generatedVersions[session.generatedVersions.length - 1]
+        : null);
 
     if (!acceptedVersion || !acceptedVersion.resumeData) {
       return res.status(404).json({
         success: false,
-        message: "No accepted optimized resume is available for download",
+        message: "No optimized resume version is available for download yet. Please generate the resume first.",
       });
     }
 
@@ -645,6 +662,7 @@ exports.downloadOptimizedPdf = async (req, res) => {
     // Always generate the guaranteed single-page PDF directly from the stored accepted resume data
     const pdfResult = await generateOnePageResumePdf(acceptedVersion.resumeData);
 
+    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition, Content-Length");
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}"`);
     res.setHeader("Content-Length", pdfResult.pdfBuffer.length);

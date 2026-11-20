@@ -156,32 +156,48 @@ const renderPdfWithConfig = (resume, config) => {
       }
 
       if (contactItems.length > 0) {
-        doc.moveDown(0.12);
-        doc.font("Times-Roman").fontSize(config.contactFontSize).fillColor(blackColor);
+        doc.font("Times-Roman").fontSize(config.contactFontSize);
+        const separator = "   •   ";
+        const sepWidth = doc.widthOfString(separator);
+
+        let totalWidth = 0;
+        for (let i = 0; i < contactItems.length; i++) {
+          totalWidth += doc.widthOfString(contactItems[i].text);
+          if (i < contactItems.length - 1) {
+            totalWidth += sepWidth;
+          }
+        }
+
+        let currentX = config.marginLeft + (contentWidth - totalWidth) / 2;
+        const y = doc.y + 3;
 
         for (let i = 0; i < contactItems.length; i++) {
           const item = contactItems[i];
-          const isLast = i === contactItems.length - 1;
+          const itemWidth = doc.widthOfString(item.text);
 
-          // Note: link is active in PDF annotation, but text color is strictly pure black
           if (item.link) {
-            doc.fillColor(blackColor).text(item.text, {
+            doc.fillColor(blackColor).text(item.text, currentX, y, {
               link: item.link,
               underline: false,
-              continued: !isLast,
+              lineBreak: false,
             });
           } else {
-            doc.fillColor(blackColor).text(item.text, { continued: !isLast });
-          }
-
-          if (!isLast) {
-            doc.fillColor(blackColor).text("   ", {
-              link: null,
-              underline: false,
-              continued: true,
+            doc.fillColor(blackColor).text(item.text, currentX, y, {
+              lineBreak: false,
             });
           }
+
+          currentX += itemWidth;
+
+          if (i < contactItems.length - 1) {
+            doc.fillColor(blackColor).text(separator, currentX, y, {
+              lineBreak: false,
+            });
+            currentX += sepWidth;
+          }
         }
+
+        doc.y = y + doc.currentLineHeight() + 3;
       }
 
       // ============================================
@@ -331,9 +347,15 @@ const renderPdfWithConfig = (resume, config) => {
         renderSectionHeader("Projects");
 
         projects.forEach((proj) => {
-          const techs = (proj.technologies || []).length > 0
-            ? ` | ${Array.isArray(proj.technologies) ? proj.technologies.join(", ") : proj.technologies}`
-            : "";
+          let rawTechs = proj.technologies;
+          if (typeof rawTechs === "string") {
+            rawTechs = rawTechs.split(",").map((t) => t.trim()).filter(Boolean);
+          } else if (!Array.isArray(rawTechs)) {
+            rawTechs = [];
+          }
+          // Only show top 2-3 main core technologies beside the title (e.g. Flutter, Node.js, MongoDB)
+          const coreTechs = rawTechs.slice(0, 3).join(", ");
+          const techs = coreTechs.length > 0 ? ` | ${coreTechs}` : "";
           const dates = `${proj.startDate || ""} - ${proj.endDate || ""}`.trim();
           const leftProj = `${proj.title || "Project"}${techs}`;
 
