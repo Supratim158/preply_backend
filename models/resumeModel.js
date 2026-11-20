@@ -6,7 +6,7 @@ const atsResumeSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true
+      index: true,
     },
 
     originalName: {
@@ -45,36 +45,30 @@ const atsResumeSchema = new mongoose.Schema(
     },
 
     scoreBreakdown: {
-      contentScore: Number,
-      jobMatchScore: Number,
-      linkScore: Number,
-      formattingScore: Number,
-      pagePenalty: Number,
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
 
     links: [
-    {
+      {
         url: {
-            type: String,
-            required: true
+          type: String,
+          required: true,
         },
-
         domain: {
-            type: String,
-            default: ""
+          type: String,
+          default: "",
         },
-
         validFormat: {
-            type: Boolean,
-            default: false
+          type: Boolean,
+          default: false,
         },
-
         type: {
-            type: String,
-            default: "Other"
-        }
-    }
-],
+          type: String,
+          default: "Other",
+        },
+      },
+    ],
 
     matchedKeywords: [String],
 
@@ -108,7 +102,4 @@ const atsResumeSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model(
-  "ATSResume",
-  atsResumeSchema
-);
+module.exports = mongoose.model("ATSResume", atsResumeSchema);

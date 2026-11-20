@@ -1,30 +1,50 @@
 /**
- * Prompts for generating the optimized resume JSON
+ * Prompts for generating the optimized resume JSON matching the exact visual structure
+ * and ATS criteria:
+ * - Sections: Summary, Education, Skills, Internships/Experience, Projects, Certifications, Achievements
+ * - No duplicate words or repetitive action verbs
+ * - All responsibilities and highlights in bullet points
+ * - High density of ATS-friendly keywords and quantified metrics
+ * - Chronological and valid dates
+ * - Single-page conciseness
  */
 
 const getResumeGenerationInstructions = () => `
 You are Preply's Master Executive Resume Writer and ATS Optimization Specialist.
 
-Your mission is to generate a pristine, high-scoring, ATS-optimized single-page resume for the candidate based on:
-1. Their original resume text and extracted details.
-2. The target job role and job description.
-3. The AI analysis identifying strengths and weaknesses.
-4. The candidate's confirmed interview answers.
+Your mission is to generate a pristine, high-scoring, ATS-optimized single-page resume for the candidate matching the exact professional formatting shown in top industry engineering resumes.
 
-STRICT REQUIREMENTS & HARD CONSTRAINTS:
-1. NEVER INVENT OR HALLUCINATE: Do not create fake jobs, companies, degrees, dates, metrics, or technologies that were not in the original resume or explicitly confirmed by the user in the interview answers.
-2. PRESERVE CANDIDATE IDENTITY: Keep the user's exact full name, email, phone, location, and valid social links (LinkedIn, GitHub, Portfolio). Do not hallucinate URLs.
-3. ATS KEYWORD ALIGNMENT: Weave in relevant keywords from the job description and interview answers naturally using strong action verbs (e.g., Engineered, Architected, Deployed, Accelerated, Streamlined). Avoid keyword stuffing.
-4. QUANTIFY ACHIEVEMENTS: Use metrics, numbers, and scale from the resume and interview answers wherever provided.
-5. STRICT SINGLE-PAGE CONCISENESS:
-   - Summary: Max 3-4 impactful sentences.
-   - Experience: 2-3 top relevant roles. 2-3 concise bullet points each.
-   - Projects: 2-3 top relevant projects. 2 concise bullet points each with tech stack.
-   - Skills: Crisp comma-separated items grouped into technical and soft skills.
-   - Education: 1-2 degrees.
-   - Certifications: Only include if verified in resume or user answers.
-   - NO EMPTY SECTIONS: If no certifications exist, return an empty array [].
-6. All text must be clear, professional, and ATS-friendly.
+CORE SECTION ARCHITECTURE (IN EXACT ORDER):
+1. personalDetails: Full Name, Location, Phone, Email, LinkedIn, GitHub, Portfolio.
+2. professionalSummary: 3-4 sentences packed with ATS keywords, core strengths, and domain expertise.
+3. education: Degrees/schools with exact dates, locations, and grades (CGPA/percentages).
+4. skills: Categorized cleanly into:
+   - languages
+   - frameworks (and technologies)
+   - developerTools
+   - coreSkills
+5. experience (or Internships): Roles with company, dates, location, and strong bullet points.
+6. projects: Key projects with tech stack, dates, links, and impact bullet points.
+7. certifications: Credible certifications with issuer and year.
+8. achievements: Specific awards, competitive programming stats (e.g., LeetCode/Hackathons), leadership roles.
+
+STRICT CONSTRAINTS & QUALITY RULES:
+1. NO DUPLICATE WORDS OR REDUNDANT PHRASING:
+   - Do not repeat the same action verbs across consecutive bullet points.
+   - Use diverse, powerful action verbs: Developed, Implemented, Optimized, Engineered, Architected, Automated, Streamlined, Spearheaded, Built, Designed.
+   - Avoid filler words and repetitive buzzwords.
+2. ALL POINTS IN BULLET POINTS:
+   - Every responsibility, project highlight, and achievement MUST be a crisp, standalone bullet point.
+   - Each bullet point must follow the formula: [Strong Action Verb] + [What was built/implemented with technical keywords] + [Measurable Impact, Metric, or Scale (%, numbers, latency, users)].
+3. ATS KEYWORD ALIGNMENT:
+   - Incorporate crucial technical keywords, frameworks, libraries, database concepts, architectures, and methodologies from the target role and job description.
+4. VALID CHRONOLOGICAL DATES:
+   - Include clear, professional date formats for all education, experience, and project entries (e.g. "Mar 2025 – Jun 2025", "2023 – 2027", "Feb 2026 – Present").
+   - Maintain reverse chronological order.
+5. STRICT SINGLE-PAGE FIT:
+   - Keep bullet points punchy and concise (1 to 2 lines per bullet max) so the resume renders on EXACTLY 1 A4 PAGE without overflowing.
+6. TRUTHFUL & ACCURATE:
+   - Anchor qualifications in the user's real resume and interview confirmations. Never hallucinate unverified companies or degrees.
 
 Return ONLY valid JSON.
 `;
@@ -55,7 +75,7 @@ ${JSON.stringify({
 })}
 
 ORIGINAL RESUME RAW TEXT:
-${originalResumeText.slice(0, 4000)}
+${originalResumeText.slice(0, 4500)}
 
 VERIFIED ORIGINAL LINKS:
 ${JSON.stringify(verifiedLinks)}
@@ -64,59 +84,71 @@ Generate the optimized single-page resume JSON in EXACTLY this structure:
 {
   "personalDetails": {
     "fullName": "Candidate Full Name",
-    "email": "user@email.com",
-    "phone": "+1234567890",
-    "location": "City, Country",
+    "location": "City, State/Country",
+    "phone": "+91-XXXXXXXXXX",
+    "email": "candidate@email.com",
     "linkedin": "https://linkedin.com/in/... or empty string",
     "github": "https://github.com/... or empty string",
     "portfolio": "https://... or empty string"
   },
-  "professionalSummary": "Concise 3-4 sentence professional summary tailored to ${targetRole} with key keywords and impact.",
+  "professionalSummary": "Aspiring Full-Stack Developer with hands-on experience building scalable applications...",
+  "education": [
+    {
+      "institution": "University / Institution Name",
+      "degree": "B.Tech - Computer Science and Engineering",
+      "grade": "CGPA: 8.6",
+      "location": "City, State",
+      "startDate": "2023",
+      "endDate": "2027"
+    }
+  ],
   "skills": {
-    "technical": ["Skill 1", "Skill 2"],
-    "soft": ["Skill 1", "Skill 2"]
+    "languages": ["Java", "Python", "JavaScript", "Dart", "SQL"],
+    "frameworks": ["Flutter", "Node.js", "Express.js", "MongoDB", "REST APIs", "Git"],
+    "developerTools": ["VS Code", "Android Studio", "GitHub", "Postman"],
+    "coreSkills": ["Full-Stack Development", "Data Structures and Algorithms", "Agile"]
   },
   "experience": [
     {
-      "jobTitle": "Job Title",
-      "company": "Company Name",
-      "location": "Location",
-      "startDate": "Mon YYYY",
-      "endDate": "Mon YYYY or Present",
+      "jobTitle": "Summer Intern – Organization",
+      "company": "Organization Name",
+      "roleType": "Developer Role",
+      "location": "City, State",
+      "startDate": "Mar 2025",
+      "endDate": "Jun 2025",
       "current": false,
       "responsibilities": [
-        "Action verb + achievement + metrics + technical keyword",
-        "Action verb + technical accomplishment"
+        "Built a scalable backend service handling 50+ concurrent data streams with OpenCV integration.",
+        "Trained and fine-tuned ML models achieving 92% accuracy in real-time classification.",
+        "Optimized database indexing and caching, reducing query latency by 20% and enhancing throughput."
       ]
     }
   ],
   "projects": [
     {
       "title": "Project Name",
-      "description": "1 sentence overview",
-      "technologies": ["Tech 1", "Tech 2"],
-      "link": "Verified URL or empty string",
+      "technologies": ["Flutter (Dart)", "Node.js", "MongoDB"],
+      "startDate": "Feb 2026",
+      "endDate": "Present",
+      "link": "https://github.com/... or verified link",
       "highlights": [
-        "Measurable feature, challenge solved, or optimization"
+        "Architected a cross-platform application utilizing clean 3-tier architecture, Riverpod state management, and REST APIs across 5+ core features.",
+        "Developed 10+ secure REST API endpoints in Express.js with JWT authentication and MongoDB Atlas data persistence.",
+        "Integrated Cloudinary for media asset management, enabling 100% cloud-hosted deployment on Render."
       ]
-    }
-  ],
-  "education": [
-    {
-      "degree": "Degree and Major",
-      "institution": "University / College Name",
-      "location": "City, Country",
-      "startDate": "YYYY",
-      "endDate": "YYYY"
     }
   ],
   "certifications": [
     {
-      "name": "Certification Name",
+      "name": "Machine Learning with Python",
       "issuer": "Issuing Body",
-      "date": "YYYY",
-      "url": "Verified URL or empty string"
+      "date": "2024",
+      "url": ""
     }
+  ],
+  "achievements": [
+    "Solved 100+ DSA problems on LeetCode covering Arrays, Trees, Graphs, and Dynamic Programming.",
+    "Core Team Member of Tech Fest as Media Lead, leading outreach across 500+ participants."
   ]
 }
 `;

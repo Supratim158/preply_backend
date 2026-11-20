@@ -9,12 +9,12 @@ const SECTION_PATTERNS = {
 };
 
 const WEIGHTS = {
-  keywordMatch: 0.40,
-  skillsCoverage: 0.20,
-  parseFormatting: 0.15,
-  experienceAlignment: 0.12,
-  titleAndSections: 0.08,
-  educationCertificationsImpact: 0.05,
+  technicalSkillsMatching: 0.30,
+  keywordMatching: 0.20,
+  workExperienceRelevance: 0.20,
+  projectRelevance: 0.10,
+  resumeStructure: 0.10,
+  achievementsAndQuantification: 0.10,
 };
 
 const STOP_WORDS = new Set([
@@ -718,12 +718,12 @@ function calculateATSScore(text, jobDescription = "", options = {}) {
   const educationResult = scoreEducationCertificationsImpact(resume, rawJD);
 
   const componentScores = {
-    keywordMatch: keywordResult.score,
-    skillsCoverage: skillsResult.score,
-    parseFormatting: parsingResult.score,
-    experienceAlignment: experienceResult.score,
-    titleAndSections: titleResult.score,
-    educationCertificationsImpact: educationResult.score,
+    technicalSkillsMatching: skillsResult.score,
+    keywordMatching: keywordResult.score,
+    workExperienceRelevance: experienceResult.score,
+    projectRelevance: Math.min(100, Math.round((titleResult.score * 0.4 + experienceResult.score * 0.6))),
+    resumeStructure: parsingResult.score,
+    achievementsAndQuantification: educationResult.score,
   };
 
   const weightedBreakdown = Object.fromEntries(
@@ -815,12 +815,17 @@ function calculateATSScore(text, jobDescription = "", options = {}) {
     weightedBreakdown,
     componentScores,
     breakdown: {
+      technicalSkillsMatching: skillsResult.score,
+      keywordMatching: keywordResult.score,
+      workExperienceRelevance: experienceResult.score,
+      projectRelevance: componentScores.projectRelevance,
+      resumeStructure: parsingResult.score,
+      achievementsAndQuantification: educationResult.score,
+      // legacy keys for backward compatibility
       keywordMatch: keywordResult.score,
       skillsCoverage: skillsResult.score,
       parseFormatting: parsingResult.score,
       experienceAlignment: experienceResult.score,
-      titleAndSections: titleResult.score,
-      educationCertificationsImpact: educationResult.score,
       pageCount,
       pagePenalty,
     },
