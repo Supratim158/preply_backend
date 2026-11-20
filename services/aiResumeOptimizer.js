@@ -105,7 +105,7 @@ const regenerateResumeWithAtsFeedback = async ({
     instructions,
     input,
     reasoningEffort: null,
-    maxOutputTokens: 2500,
+    maxOutputTokens: 4500,
   });
 
   const sanitized = validateAndSanitizeResume(rawResume, fallbackContact);

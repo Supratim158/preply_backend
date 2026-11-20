@@ -43,13 +43,115 @@ const extractTokenUsage = (response) => {
 };
 
 /**
+ * Robust JSON parser and auto-repair utility
+ * Handles:
+ * - Markdown code fences
+ * - Trailing commas before } or ]
+ * - Truncated JSON strings/arrays/objects resulting from token limit cutoff
+ * - Unescaped control characters
+ */
+const repairAndParseJson = (rawText) => {
+  if (!rawText || typeof rawText !== "string") {
+    throw new Error("Input must be a non-empty string");
+  }
+
+  let text = rawText.trim();
+
+  // Strip markdown code blocks
+  const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (codeBlockMatch) {
+    text = codeBlockMatch[1].trim();
+  } else {
+    const firstBrace = text.indexOf("{");
+    if (firstBrace !== -1) {
+      text = text.slice(firstBrace);
+    }
+  }
+
+  // Attempt 1: Direct JSON.parse
+  try {
+    return JSON.parse(text);
+  } catch (err1) {
+    // Continue to repair attempts
+  }
+
+  // Attempt 2: Remove trailing commas
+  let cleaned = text.replace(/,\s*([\]}])/g, "$1");
+  try {
+    return JSON.parse(cleaned);
+  } catch (err2) {
+    // Continue to structural repair
+  }
+
+  // Attempt 3: Structural repair for truncated JSON
+  let inString = false;
+  let isEscaped = false;
+  const stack = [];
+
+  for (let i = 0; i < cleaned.length; i++) {
+    const char = cleaned[i];
+
+    if (inString) {
+      if (char === "\\" && !isEscaped) {
+        isEscaped = true;
+      } else if (char === '"' && !isEscaped) {
+        inString = false;
+      } else {
+        isEscaped = false;
+      }
+    } else {
+      if (char === '"') {
+        inString = true;
+      } else if (char === "{" || char === "[") {
+        stack.push(char);
+      } else if (char === "}") {
+        if (stack.length > 0 && stack[stack.length - 1] === "{") {
+          stack.pop();
+        }
+      } else if (char === "]") {
+        if (stack.length > 0 && stack[stack.length - 1] === "[") {
+          stack.pop();
+        }
+      }
+    }
+  }
+
+  let repaired = cleaned;
+
+  // If truncated inside a string, close the quote
+  if (inString) {
+    repaired += '"';
+  }
+
+  // Remove trailing dangling commas or partial key-values
+  repaired = repaired.replace(/,\s*$/, "");
+  repaired = repaired.replace(/,\s*"[^"]*"\s*:\s*$/, "");
+  repaired = repaired.replace(/,\s*"[^"]*"\s*$/, "");
+
+  // Close remaining open brackets and braces in reverse order
+  while (stack.length > 0) {
+    const openChar = stack.pop();
+    if (openChar === "{") {
+      repaired += "}";
+    } else if (openChar === "[") {
+      repaired += "]";
+    }
+  }
+
+  // Clean trailing commas again before closing brackets
+  repaired = repaired.replace(/,\s*([\]}])/g, "$1");
+
+  return JSON.parse(repaired);
+};
+
+/**
  * Call OpenAI Responses API with structured JSON output
  */
 const generateStructuredJson = async ({
   instructions,
   input,
   reasoningEffort = null,
-  maxOutputTokens = 3500,
+  maxOutputTokens = 4500,
   retries = 2,
 }) => {
   const client = getOpenAIClient();
@@ -96,16 +198,10 @@ const generateStructuredJson = async ({
 
       let parsedData;
       try {
-        parsedData = JSON.parse(response.output_text);
-      } catch (jsonErr) {
-        // Attempt to extract JSON if surrounded by markdown code blocks
-        const match = response.output_text.match(/```json\s*([\s\S]*?)\s*```/) ||
-          response.output_text.match(/\{[\s\S]*\}/);
-        if (match) {
-          parsedData = JSON.parse(match[1] || match[0]);
-        } else {
-          throw new Error(`Failed to parse AI output as JSON: ${jsonErr.message}`);
-        }
+        parsedData = repairAndParseJson(response.output_text);
+      } catch (parseErr) {
+        console.warn(`[OpenAI JSON Parse Warning] Attempt ${attempt + 1}: ${parseErr.message}`);
+        throw new Error(`Invalid JSON returned by AI: ${parseErr.message}`);
       }
 
       const usage = extractTokenUsage(response);
@@ -124,14 +220,20 @@ const generateStructuredJson = async ({
         continue;
       }
 
+      // If token limit caused truncation, increase max_output_tokens on next attempt
+      if (err.message && (err.message.includes("JSON") || err.message.includes("tokens"))) {
+        payload.max_output_tokens = Math.min(8000, (payload.max_output_tokens || 4000) + 1500);
+      }
+
       // If rate limited or transient network error, wait and retry
-      const isRateLimitOrTransient =
+      const isTransient =
         err.status === 429 ||
         err.status >= 500 ||
         err.code === "ETIMEDOUT" ||
-        err.code === "ECONNRESET";
+        err.code === "ECONNRESET" ||
+        (err.message && err.message.includes("JSON"));
 
-      if (attempt < retries && isRateLimitOrTransient) {
+      if (attempt < retries && isTransient) {
         const delay = Math.pow(2, attempt) * 1000;
         console.warn(`OpenAI call transient error (attempt ${attempt + 1}/${retries + 1}), retrying in ${delay}ms...`, err.message);
         await new Promise((resolve) => setTimeout(resolve, delay));
@@ -153,7 +255,7 @@ const generateText = async ({
   instructions,
   input,
   reasoningEffort = null,
-  maxOutputTokens = 2000,
+  maxOutputTokens = 3000,
   retries = 2,
 }) => {
   const client = getOpenAIClient();
@@ -221,6 +323,7 @@ const generateText = async ({
 module.exports = {
   getOpenAIClient,
   getModel,
+  repairAndParseJson,
   generateStructuredJson,
   generateText,
   extractTokenUsage,

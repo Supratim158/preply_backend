@@ -32,7 +32,7 @@ const generateOptimizedResume = async ({
     instructions,
     input,
     reasoningEffort: null,
-    maxOutputTokens: 2500,
+    maxOutputTokens: 4500,
   });
 
   // Validate and sanitize the structured resume

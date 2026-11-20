@@ -33,7 +33,7 @@ const analyzeResumeForOptimization = async ({
     instructions,
     input,
     reasoningEffort: "low",
-    maxOutputTokens: 3000,
+    maxOutputTokens: 4000,
   });
 
   return {
